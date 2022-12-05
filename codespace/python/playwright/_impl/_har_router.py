@@ -74,8 +74,6 @@ class HarRouter:
             )
             return
 
-        if action == "error":
-            pass
         # Report the error, but fall through to the default handler.
 
         if self._not_found_action == "abort":

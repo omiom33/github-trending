@@ -41,10 +41,16 @@ def go_sign(driver,cityid,city,email,school,fname,lname,bm,by,gm,gy,url):
     data_sitekey_div = driver.find_element_by_class_name("g-recaptcha")
     data_sitekey = data_sitekey_div.get_attribute("data-sitekey")
     print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tData Site Key: "+data_sitekey )
- 
+
     s = requests.Session()
-    captcha_id = s.post("http://2captcha.com/in.php?key={}&method=userrecaptcha&googlekey={}&pageurl={}".format(API_KEY, data_sitekey, url)).text.split('|')[1]
-    recaptcha_answer = s.get("http://2captcha.com/res.php?key={}&action=get&id={}".format(API_KEY, captcha_id)).text
+    captcha_id = s.post(
+        f"http://2captcha.com/in.php?key={API_KEY}&method=userrecaptcha&googlekey={data_sitekey}&pageurl={url}"
+    ).text.split('|')[1]
+
+    recaptcha_answer = s.get(
+        f"http://2captcha.com/res.php?key={API_KEY}&action=get&id={captcha_id}"
+    ).text
+
     print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tSolving Ref Captcha...")
     start_time = time.time()
     while 'CAPCHA_NOT_READY' in recaptcha_answer:
@@ -53,17 +59,20 @@ def go_sign(driver,cityid,city,email,school,fname,lname,bm,by,gm,gy,url):
             print_red(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\t获取验证码超过1分钟，跳过")
             return
         time.sleep(5)
-        recaptcha_answer = s.get("http://2captcha.com/res.php?key={}&action=get&id={}".format(API_KEY, captcha_id)).text
+        recaptcha_answer = s.get(
+            f"http://2captcha.com/res.php?key={API_KEY}&action=get&id={captcha_id}"
+        ).text
+
     recaptcha_answer = recaptcha_answer.split('|')[1]
     print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tCaptcha Res: "+recaptcha_answer)
-    driver.execute_script('$("#g-recaptcha-response").val("{}")'.format(recaptcha_answer)) 
+    driver.execute_script(f'$("#g-recaptcha-response").val("{recaptcha_answer}")')
     time.sleep(3)
     driver.find_element_by_id("j_id0:CommunitiesTemplateEngage:appFrm:btnNext").click()
     time.sleep(10)
     print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tGo Next...")
     time.sleep(6)
 
-    if not "Promotion Signup" in driver.find_element_by_tag_name("body").text:
+    if "Promotion Signup" not in driver.find_element_by_tag_name("body").text:
         print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tSuccess...")
     else:
         print_white(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\tFail...")
@@ -73,8 +82,7 @@ def arg_parser():
     parser = argparse.ArgumentParser(description='For AWS')
     parser.add_argument('--profile', '-profile', metavar="字段文件", required=True)
     parser.add_argument('--proxyfile', '-proxyfile', metavar="代理文件", required=True)
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
        
 
 def print_red(msg):
@@ -107,7 +115,7 @@ def main():
             user_agent = ua.random
             opts = FirefoxOptions()
             opts.add_argument("--headless")
-            opts.add_argument('user-agent=%s'%user_agent)
+            opts.add_argument(f'user-agent={user_agent}')
 
             proxy=pd.read_csv(proxyfilepath,header=None).values.tolist()
             size = len(proxy)-1
@@ -145,14 +153,14 @@ def main():
             cm = r[8]
             cy = r[9]
             url = r[10]
-            
+
             # go_sign(driver,counrty,city,email,school,fn,ln,bm,by,cm,cy)
 
             try:
                 go_sign(driver,counrty,city,email,school,fn,ln,bm,by,cm,cy,url)
                 driver.close()
                 driver.quit()
-                
+
             except Exception as e:
                 # print(e)
                 print_red(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())+"\t报错,跳过")

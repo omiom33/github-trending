@@ -169,11 +169,10 @@ class BrowserType(ChannelOwner):
         response = await self._channel.send_return_as_dict("connectOverCDP", params)
         browser = cast(Browser, from_channel(response["browser"]))
 
-        default_context = cast(
+        if default_context := cast(
             Optional[BrowserContext],
             from_nullable_channel(response.get("defaultContext")),
-        )
-        if default_context:
+        ):
             browser._contexts.append(default_context)
             default_context._browser = browser
         browser._set_browser_type(self)
@@ -189,7 +188,7 @@ class BrowserType(ChannelOwner):
         if timeout is None:
             timeout = 30000
 
-        headers = {**(headers if headers else {}), "x-playwright-browser": self.name}
+        headers = {**headers or {}, "x-playwright-browser": self.name}
 
         transport = WebSocketTransport(
             self._connection._loop, ws_endpoint, headers, slow_mo
@@ -243,10 +242,9 @@ def normalize_launch_params(params: Dict) -> None:
             {"name": name, "value": str(value)}
             for [name, value] in params["env"].items()
         ]
-    if "ignoreDefaultArgs" in params:
-        if params["ignoreDefaultArgs"] is True:
-            params["ignoreAllDefaultArgs"] = True
-            del params["ignoreDefaultArgs"]
+    if "ignoreDefaultArgs" in params and params["ignoreDefaultArgs"] is True:
+        params["ignoreAllDefaultArgs"] = True
+        del params["ignoreDefaultArgs"]
     if "executablePath" in params:
         params["executablePath"] = str(Path(params["executablePath"]))
     if "downloadsPath" in params:

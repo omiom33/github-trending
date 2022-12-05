@@ -83,10 +83,11 @@ class _BotPickler(pickle.Pickler):
     def reducer_override(  # skipcq: PYL-R0201
         self, obj: TelegramObj
     ) -> Tuple[Callable, Tuple[Type[TelegramObj], dict]]:
-        if not isinstance(obj, TelegramObject):
-            return NotImplemented
-
-        return _custom_reduction(obj)
+        return (
+            _custom_reduction(obj)
+            if isinstance(obj, TelegramObject)
+            else NotImplemented
+        )
 
     def persistent_id(self, obj: object) -> Optional[str]:
         """Used to 'mark' the Bot, so it can be replaced later. See
@@ -361,9 +362,7 @@ class PicklePersistence(BasePersistence[UD, CD, BD]):
             self.callback_data = data
         else:
             self._load_singlefile()
-        if self.callback_data is None:
-            return None
-        return deepcopy(self.callback_data)
+        return None if self.callback_data is None else deepcopy(self.callback_data)
 
     async def get_conversations(self, name: str) -> ConversationDict:
         """Returns the conversations from the pickle file if it exists or an empty dict.
@@ -493,10 +492,10 @@ class PicklePersistence(BasePersistence[UD, CD, BD]):
         self.chat_data.pop(chat_id, None)  # type: ignore[arg-type]
 
         if not self.on_flush:
-            if not self.single_file:
-                self._dump_file(Path(f"{self.filepath}_chat_data"), self.chat_data)
-            else:
+            if self.single_file:
                 self._dump_singlefile()
+            else:
+                self._dump_file(Path(f"{self.filepath}_chat_data"), self.chat_data)
 
     async def drop_user_data(self, user_id: int) -> None:
         """Will delete the specified key from the ``user_data`` and depending on
@@ -512,10 +511,10 @@ class PicklePersistence(BasePersistence[UD, CD, BD]):
         self.user_data.pop(user_id, None)  # type: ignore[arg-type]
 
         if not self.on_flush:
-            if not self.single_file:
-                self._dump_file(Path(f"{self.filepath}_user_data"), self.user_data)
-            else:
+            if self.single_file:
                 self._dump_singlefile()
+            else:
+                self._dump_file(Path(f"{self.filepath}_user_data"), self.user_data)
 
     async def refresh_user_data(self, user_id: int, user_data: UD) -> None:
         """Does nothing.

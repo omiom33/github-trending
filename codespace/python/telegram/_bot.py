@@ -244,14 +244,15 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         )
 
         if private_key:
-            if not CRYPTO_INSTALLED:
+            if CRYPTO_INSTALLED:
+                self._private_key = serialization.load_pem_private_key(
+                    private_key, password=private_key_password, backend=default_backend()
+                )
+            else:
                 raise RuntimeError(
                     "To use Telegram Passports, PTB must be installed via `pip install "
                     "python-telegram-bot[passport]`."
                 )
-            self._private_key = serialization.load_pem_private_key(
-                private_key, password=private_key_password, backend=default_backend()
-            )
 
     @property
     def token(self) -> str:
@@ -418,11 +419,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             parameters=[RequestParameter.from_input(key, value) for key, value in data.items()],
         )
 
-        if endpoint == "getUpdates":
-            request = self._request[0]
-        else:
-            request = self._request[1]
-
+        request = self._request[0] if endpoint == "getUpdates" else self._request[1]
         return await request.post(
             url=f"{self._base_url}/{endpoint}",
             request_data=request_data,
@@ -493,10 +490,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             api_kwargs=api_kwargs,
         )
 
-        if result is True:
-            return result
-
-        return Message.de_json(result, self)  # type: ignore[return-value, arg-type]
+        return result if result is True else Message.de_json(result, self)
 
     async def initialize(self) -> None:
         """Initialize resources used by this class. Currently calls :meth:`get_me` to
@@ -798,7 +792,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id, "message_id": message_id}
-        result = await self._post(
+        return await self._post(
             "deleteMessage",
             data,
             read_timeout=read_timeout,
@@ -807,7 +801,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def forward_message(
@@ -2555,7 +2548,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id, "action": action}
-        result = await self._post(
+        return await self._post(
             "sendChatAction",
             data,
             read_timeout=read_timeout,
@@ -2564,7 +2557,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     def _effective_inline_results(  # skipcq: PYL-R0201
         self,
@@ -2587,36 +2579,30 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         if current_offset is not None:
             # Convert the string input to integer
-            if current_offset == "":
-                current_offset_int = 0
-            else:
-                current_offset_int = int(current_offset)
-
+            current_offset_int = int(current_offset) if current_offset else 0
             # for now set to empty string, stating that there are no more results
             # might change later
             next_offset = ""
 
             if callable(results):
-                callable_output = results(current_offset_int)
-                if not callable_output:
-                    effective_results: Sequence["InlineQueryResult"] = []
-                else:
+                if callable_output := results(current_offset_int):
                     effective_results = callable_output
                     # the callback *might* return more results on the next call, so we increment
                     # the page count
                     next_offset = str(current_offset_int + 1)
-            else:
-                if len(results) > (current_offset_int + 1) * InlineQueryLimit.RESULTS:
-                    # we expect more results for the next page
-                    next_offset_int = current_offset_int + 1
-                    next_offset = str(next_offset_int)
-                    effective_results = results[
-                        current_offset_int
-                        * InlineQueryLimit.RESULTS : next_offset_int
-                        * InlineQueryLimit.RESULTS
-                    ]
                 else:
-                    effective_results = results[current_offset_int * InlineQueryLimit.RESULTS :]
+                    effective_results: Sequence["InlineQueryResult"] = []
+            elif len(results) > (current_offset_int + 1) * InlineQueryLimit.RESULTS:
+                # we expect more results for the next page
+                next_offset_int = current_offset_int + 1
+                next_offset = str(next_offset_int)
+                effective_results = results[
+                    current_offset_int
+                    * InlineQueryLimit.RESULTS : next_offset_int
+                    * InlineQueryLimit.RESULTS
+                ]
+            else:
+                effective_results = results[current_offset_int * InlineQueryLimit.RESULTS :]
         else:
             effective_results = results  # type: ignore[assignment]
 
@@ -2945,7 +2931,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if revoke_messages is not None:
             data["revoke_messages"] = revoke_messages
 
-        result = await self._post(
+        return await self._post(
             "banChatMember",
             data,
             read_timeout=read_timeout,
@@ -2954,8 +2940,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def ban_chat_sender_chat(
@@ -2993,7 +2977,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id, "sender_chat_id": sender_chat_id}
 
-        result = await self._post(
+        return await self._post(
             "banChatSenderChat",
             data,
             read_timeout=read_timeout,
@@ -3002,8 +2986,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def unban_chat_member(
@@ -3045,7 +3027,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if only_if_banned is not None:
             data["only_if_banned"] = only_if_banned
 
-        result = await self._post(
+        return await self._post(
             "unbanChatMember",
             data,
             read_timeout=read_timeout,
@@ -3054,8 +3036,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def unban_chat_sender_chat(
@@ -3090,7 +3070,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id, "sender_chat_id": sender_chat_id}
 
-        result = await self._post(
+        return await self._post(
             "unbanChatSenderChat",
             data,
             read_timeout=read_timeout,
@@ -3099,8 +3079,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def answer_callback_query(
@@ -3163,7 +3141,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if cache_time is not None:
             data["cache_time"] = cache_time
 
-        result = await self._post(
+        return await self._post(
             "answerCallbackQuery",
             data,
             read_timeout=read_timeout,
@@ -3172,8 +3150,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def edit_message_text(
@@ -3657,7 +3633,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if secret_token is not None:
             data["secret_token"] = secret_token
 
-        result = await self._post(
+        return await self._post(
             "setWebhook",
             data,
             read_timeout=read_timeout,
@@ -3666,8 +3642,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def delete_webhook(
@@ -3700,7 +3674,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if drop_pending_updates:
             data["drop_pending_updates"] = drop_pending_updates
 
-        result = await self._post(
+        return await self._post(
             "deleteWebhook",
             data,
             read_timeout=read_timeout,
@@ -3709,8 +3683,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def leave_chat(
@@ -3739,7 +3711,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id}
 
-        result = await self._post(
+        return await self._post(
             "leaveChat",
             data,
             read_timeout=read_timeout,
@@ -3748,8 +3720,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def get_chat(
@@ -3859,7 +3829,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id}
-        result = await self._post(
+        return await self._post(
             "getChatMemberCount",
             data,
             read_timeout=read_timeout,
@@ -3868,7 +3838,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def get_chat_member(
@@ -3935,7 +3904,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             :obj:`bool`: On success, :obj:`True` is returned.
         """
         data: JSONDict = {"chat_id": chat_id, "sticker_set_name": sticker_set_name}
-        result = await self._post(
+        return await self._post(
             "setChatStickerSet",
             data,
             read_timeout=read_timeout,
@@ -3944,7 +3913,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def delete_chat_sticker_set(
@@ -3969,7 +3937,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
              :obj:`bool`: On success, :obj:`True` is returned.
         """
         data: JSONDict = {"chat_id": chat_id}
-        result = await self._post(
+        return await self._post(
             "deleteChatStickerSet",
             data,
             read_timeout=read_timeout,
@@ -3978,7 +3946,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     async def get_webhook_info(
         self,
@@ -4381,7 +4348,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if error_message is not None:
             data["error_message"] = error_message
 
-        result = await self._post(
+        return await self._post(
             "answerShippingQuery",
             data,
             read_timeout=read_timeout,
@@ -4390,8 +4357,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def answer_pre_checkout_query(  # pylint: disable=invalid-name
@@ -4441,7 +4406,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if error_message is not None:
             data["error_message"] = error_message
 
-        result = await self._post(
+        return await self._post(
             "answerPreCheckoutQuery",
             data,
             read_timeout=read_timeout,
@@ -4450,8 +4415,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def answer_web_app_query(
@@ -4550,7 +4513,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if until_date is not None:
             data["until_date"] = until_date
 
-        result = await self._post(
+        return await self._post(
             "restrictChatMember",
             data,
             read_timeout=read_timeout,
@@ -4559,8 +4522,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def promote_chat_member(
@@ -4671,7 +4632,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         if can_manage_topics is not None:
             data["can_manage_topics"] = can_manage_topics
 
-        result = await self._post(
+        return await self._post(
             "promoteChatMember",
             data,
             read_timeout=read_timeout,
@@ -4680,8 +4641,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_chat_permissions(
@@ -4714,7 +4673,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id, "permissions": permissions}
-        result = await self._post(
+        return await self._post(
             "setChatPermissions",
             data,
             read_timeout=read_timeout,
@@ -4723,7 +4682,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_chat_administrator_custom_title(
@@ -4760,7 +4718,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id, "user_id": user_id, "custom_title": custom_title}
 
-        result = await self._post(
+        return await self._post(
             "setChatAdministratorCustomTitle",
             data,
             read_timeout=read_timeout,
@@ -4769,8 +4727,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def export_chat_invite_link(
@@ -4808,7 +4764,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id}
-        result = await self._post(
+        return await self._post(
             "exportChatInviteLink",
             data,
             read_timeout=read_timeout,
@@ -4817,7 +4773,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def create_chat_invite_link(
@@ -5070,7 +5025,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id, "user_id": user_id}
 
-        result = await self._post(
+        return await self._post(
             "approveChatJoinRequest",
             data,
             read_timeout=read_timeout,
@@ -5079,8 +5034,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def decline_chat_join_request(
@@ -5116,7 +5069,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
         """
         data: JSONDict = {"chat_id": chat_id, "user_id": user_id}
 
-        result = await self._post(
+        return await self._post(
             "declineChatJoinRequest",
             data,
             read_timeout=read_timeout,
@@ -5125,8 +5078,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_chat_photo(
@@ -5167,7 +5118,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id, "photo": self._parse_file_input(photo)}
-        result = await self._post(
+        return await self._post(
             "setChatPhoto",
             data,
             read_timeout=read_timeout,
@@ -5176,7 +5127,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def delete_chat_photo(
@@ -5207,7 +5157,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id}
-        result = await self._post(
+        return await self._post(
             "deleteChatPhoto",
             data,
             read_timeout=read_timeout,
@@ -5216,7 +5166,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_chat_title(
@@ -5251,7 +5200,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         """
         data: JSONDict = {"chat_id": chat_id, "title": title}
-        result = await self._post(
+        return await self._post(
             "setChatTitle",
             data,
             read_timeout=read_timeout,
@@ -5260,7 +5209,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_chat_description(
@@ -5298,7 +5246,7 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
 
         if description is not None:
             data["description"] = description
-        result = await self._post(
+        return await self._post(
             "setChatDescription",
             data,
             read_timeout=read_timeout,
@@ -5307,7 +5255,6 @@ class Bot(TelegramObject, AbstractAsyncContextManager):
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def pin_chat_message(
@@ -5684,7 +5631,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if sticker_type is not None:
             data["sticker_type"] = sticker_type
 
-        result = await self._post(
+        return await self._post(
             "createNewStickerSet",
             data,
             read_timeout=read_timeout,
@@ -5693,8 +5640,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def add_sticker_to_set(
@@ -5783,7 +5728,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if mask_position is not None:
             data["mask_position"] = mask_position
 
-        result = await self._post(
+        return await self._post(
             "addStickerToSet",
             data,
             read_timeout=read_timeout,
@@ -5792,8 +5737,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_sticker_position_in_set(
@@ -5821,7 +5764,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
 
         """
         data: JSONDict = {"sticker": sticker, "position": position}
-        result = await self._post(
+        return await self._post(
             "setStickerPositionInSet",
             data,
             read_timeout=read_timeout,
@@ -5830,7 +5773,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def delete_sticker_from_set(
@@ -5856,7 +5798,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
 
         """
         data: JSONDict = {"sticker": sticker}
-        result = await self._post(
+        return await self._post(
             "deleteStickerFromSet",
             data,
             read_timeout=read_timeout,
@@ -5865,7 +5807,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_sticker_set_thumb(
@@ -5913,7 +5854,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if thumb is not None:
             data["thumb"] = self._parse_file_input(thumb)
 
-        result = await self._post(
+        return await self._post(
             "setStickerSetThumb",
             data,
             read_timeout=read_timeout,
@@ -5922,8 +5863,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def set_passport_data_errors(
@@ -5959,7 +5898,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
 
         """
         data: JSONDict = {"user_id": user_id, "errors": errors}
-        result = await self._post(
+        return await self._post(
             "setPassportDataErrors",
             data,
             read_timeout=read_timeout,
@@ -5968,7 +5907,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-        return result  # type: ignore[return-value]
 
     @_log
     async def send_poll(
@@ -6327,7 +6265,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if for_channels is not None:
             data["for_channels"] = for_channels
 
-        result = await self._post(
+        return await self._post(
             "setMyDefaultAdministratorRights",
             data,
             read_timeout=read_timeout,
@@ -6336,8 +6274,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def get_my_commands(
@@ -6445,7 +6381,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if language_code:
             data["language_code"] = language_code
 
-        result = await self._post(
+        return await self._post(
             "setMyCommands",
             data,
             read_timeout=read_timeout,
@@ -6454,8 +6390,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def delete_my_commands(
@@ -6499,7 +6433,7 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
         if language_code:
             data["language_code"] = language_code
 
-        result = await self._post(
+        return await self._post(
             "deleteMyCommands",
             data,
             read_timeout=read_timeout,
@@ -6508,8 +6442,6 @@ CUSTOM_EMOJI_IDENTIFIER_LIMIT` custom emoji identifiers can be specified.
             pool_timeout=pool_timeout,
             api_kwargs=api_kwargs,
         )
-
-        return result  # type: ignore[return-value]
 
     @_log
     async def log_out(

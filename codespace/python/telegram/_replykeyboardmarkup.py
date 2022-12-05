@@ -285,7 +285,7 @@ class ReplyKeyboardMarkup(TelegramObject):
     def __hash__(self) -> int:
         return hash(
             (
-                tuple(tuple(button for button in row) for row in self.keyboard),
+                tuple(tuple(row) for row in self.keyboard),
                 self.resize_keyboard,
                 self.one_time_keyboard,
                 self.selective,

@@ -398,10 +398,10 @@ class Updater(Generic[CCT, UD, CD, BD]):
             :obj:`Queue`: The update queue that can be filled from the main thread.
 
         """
-        if (clean is not None) and (drop_pending_updates is not None):
-            raise TypeError('`clean` and `drop_pending_updates` are mutually exclusive.')
-
         if clean is not None:
+            if drop_pending_updates is not None:
+                raise TypeError('`clean` and `drop_pending_updates` are mutually exclusive.')
+
             warnings.warn(
                 'The argument `clean` of `start_polling` is deprecated. Please use '
                 '`drop_pending_updates` instead.',
@@ -512,10 +512,10 @@ class Updater(Generic[CCT, UD, CD, BD]):
             :obj:`Queue`: The update queue that can be filled from the main thread.
 
         """
-        if (clean is not None) and (drop_pending_updates is not None):
-            raise TypeError('`clean` and `drop_pending_updates` are mutually exclusive.')
-
         if clean is not None:
+            if drop_pending_updates is not None:
+                raise TypeError('`clean` and `drop_pending_updates` are mutually exclusive.')
+
             warnings.warn(
                 'The argument `clean` of `start_webhook` is deprecated. Please use '
                 '`drop_pending_updates` instead.',

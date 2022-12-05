@@ -219,10 +219,11 @@ class ExtBot(Bot, Generic[RLARGS]):
         if arbitrary_callback_data is False:
             return
 
-        if not isinstance(arbitrary_callback_data, bool):
-            maxsize = cast(int, arbitrary_callback_data)
-        else:
-            maxsize = 1024
+        maxsize = (
+            1024
+            if isinstance(arbitrary_callback_data, bool)
+            else cast(int, arbitrary_callback_data)
+        )
 
         self._callback_data_cache = CallbackDataCache(bot=self, maxsize=maxsize)
 
@@ -278,9 +279,7 @@ class ExtBot(Bot, Generic[RLARGS]):
     @classmethod
     def _extract_rl_kwargs(cls, data: Optional[JSONDict]) -> Optional[RLARGS]:
         """Extracts the `rate_limit_args` from `data` if it exists."""
-        if not data:
-            return None
-        return data.pop(cls.__RL_KEY, None)
+        return data.pop(cls.__RL_KEY, None) if data else None
 
     async def _do_post(
         self,

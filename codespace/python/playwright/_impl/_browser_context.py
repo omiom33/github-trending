@@ -294,10 +294,11 @@ class BrowserContext(ChannelOwner):
             RouteHandler(
                 URLMatcher(self._options.get("baseURL"), url),
                 handler,
-                True if self._dispatcher_fiber else False,
+                bool(self._dispatcher_fiber),
                 times,
             ),
         )
+
         if len(self._routes) == 1:
             await self._channel.send(
                 "setNetworkInterceptionEnabled", dict(enabled=True)
@@ -312,7 +313,7 @@ class BrowserContext(ChannelOwner):
                 self._routes,
             )
         )
-        if len(self._routes) == 0:
+        if not self._routes:
             await self._disable_interception()
 
     async def _record_into_har(

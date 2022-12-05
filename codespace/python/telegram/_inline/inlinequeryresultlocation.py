@@ -140,9 +140,7 @@ class InlineQueryResultLocation(InlineQueryResult):
         self.thumb_height = thumb_height
         self.horizontal_accuracy = horizontal_accuracy
         self.heading = heading
-        self.proximity_alert_radius = (
-            int(proximity_alert_radius) if proximity_alert_radius else None
-        )
+        self.proximity_alert_radius = proximity_alert_radius or None
 
     HORIZONTAL_ACCURACY: ClassVar[int] = constants.LocationLimit.HORIZONTAL_ACCURACY
     """:const:`telegram.constants.LocationLimit.HORIZONTAL_ACCURACY`

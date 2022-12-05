@@ -167,9 +167,7 @@ class URLMatcher:
     def matches(self, url: str) -> bool:
         if self._callback:
             return self._callback(url)
-        if self._regex_obj:
-            return cast(bool, self._regex_obj.search(url))
-        return False
+        return cast(bool, self._regex_obj.search(url)) if self._regex_obj else False
 
 
 class HarLookupResult(TypedDict, total=False):
@@ -195,9 +193,7 @@ class TimeoutSettings:
             return timeout
         if self._timeout is not None:
             return self._timeout
-        if self._parent:
-            return self._parent.timeout()
-        return 30000
+        return self._parent.timeout() if self._parent else 30000
 
     def set_navigation_timeout(self, navigation_timeout: float) -> None:
         self._navigation_timeout = navigation_timeout
@@ -205,9 +201,7 @@ class TimeoutSettings:
     def navigation_timeout(self) -> float:
         if self._navigation_timeout is not None:
             return self._navigation_timeout
-        if self._parent:
-            return self._parent.navigation_timeout()
-        return 30000
+        return self._parent.navigation_timeout() if self._parent else 30000
 
 
 def serialize_error(ex: Exception, tb: Optional[TracebackType]) -> ErrorPayload:
@@ -230,9 +224,8 @@ def patch_error_message(message: Optional[str]) -> Optional[str]:
     if message is None:
         return None
 
-    match = re.match(r"(\w+)(: expected .*)", message)
-    if match:
-        message = to_snake_case(match.group(1)) + match.group(2)
+    if match := re.match(r"(\w+)(: expected .*)", message):
+        message = to_snake_case(match[1]) + match[2]
     assert message is not None
     message = message.replace(
         "Pass { acceptDownloads: true }", "Pass { accept_downloads: True }"
@@ -264,7 +257,7 @@ class RouteHandler:
     ):
         self.matcher = matcher
         self.handler = handler
-        self._times = times if times else math.inf
+        self._times = times or math.inf
         self._handled_count = 0
         self._is_sync = is_sync
 
@@ -341,18 +334,15 @@ T = TypeVar("T")
 
 
 def to_impl(obj: T) -> T:
-    if hasattr(obj, "_impl_obj"):
-        return cast(Any, obj)._impl_obj
-    return obj
+    return cast(Any, obj)._impl_obj if hasattr(obj, "_impl_obj") else obj
 
 
 def object_to_array(obj: Optional[Dict]) -> Optional[List[NameValue]]:
-    if not obj:
-        return None
-    result = []
-    for key, value in obj.items():
-        result.append(NameValue(name=key, value=str(value)))
-    return result
+    return (
+        [NameValue(name=key, value=str(value)) for key, value in obj.items()]
+        if obj
+        else None
+    )
 
 
 def is_file_payload(value: Optional[Any]) -> bool:

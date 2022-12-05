@@ -94,10 +94,9 @@ class ThreadedChildWatcher(AbstractChildWatcher):
         pass
 
     def __del__(self, _warn=warnings.warn):
-        threads = [
+        if threads := [
             thread for thread in list(self._threads.values()) if thread.is_alive()
-        ]
-        if threads:
+        ]:
             _warn(
                 f"{self.__class__} has registered but not finished child processes",
                 ResourceWarning,

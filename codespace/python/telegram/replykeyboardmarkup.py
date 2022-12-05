@@ -105,9 +105,9 @@ class ReplyKeyboardMarkup(ReplyMarkup):
             self.keyboard.append(button_row)
 
         # Optionals
-        self.resize_keyboard = bool(resize_keyboard)
-        self.one_time_keyboard = bool(one_time_keyboard)
-        self.selective = bool(selective)
+        self.resize_keyboard = resize_keyboard
+        self.one_time_keyboard = one_time_keyboard
+        self.selective = selective
         self.input_field_placeholder = input_field_placeholder
 
         self._id_attrs = (self.keyboard,)
@@ -116,9 +116,10 @@ class ReplyKeyboardMarkup(ReplyMarkup):
         """See :meth:`telegram.TelegramObject.to_dict`."""
         data = super().to_dict()
 
-        data['keyboard'] = []
-        for row in self.keyboard:
-            data['keyboard'].append([button.to_dict() for button in row])
+        data['keyboard'] = [
+            [button.to_dict() for button in row] for row in self.keyboard
+        ]
+
         return data
 
     @classmethod
@@ -283,7 +284,7 @@ class ReplyKeyboardMarkup(ReplyMarkup):
     def __hash__(self) -> int:
         return hash(
             (
-                tuple(tuple(button for button in row) for row in self.keyboard),
+                tuple(tuple(row) for row in self.keyboard),
                 self.resize_keyboard,
                 self.one_time_keyboard,
                 self.selective,

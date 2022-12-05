@@ -53,8 +53,7 @@ class EventInfo(Generic[T]):
         while not self._future.done():
             self._sync_base._dispatcher_fiber.switch()
         asyncio._set_running_loop(self._sync_base._loop)
-        exception = self._future.exception()
-        if exception:
+        if exception := self._future.exception():
             raise exception
         return cast(T, mapping.from_maybe_impl(self._future.result()))
 
@@ -104,9 +103,7 @@ class SyncBase(ImplWrapper):
         return task.result()
 
     def _wrap_handler(self, handler: Any) -> Callable[..., None]:
-        if callable(handler):
-            return mapping.wrap_handler(handler)
-        return handler
+        return mapping.wrap_handler(handler) if callable(handler) else handler
 
     def on(self, event: Any, f: Any) -> None:
         """Registers the function ``f`` to the event name ``event``."""

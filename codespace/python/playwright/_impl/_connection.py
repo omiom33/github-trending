@@ -272,13 +272,11 @@ class Connection(EventEmitter):
         return callback
 
     def dispatch(self, msg: ParsedMessagePayload) -> None:
-        id = msg.get("id")
-        if id:
+        if id := msg.get("id"):
             callback = self._callbacks.pop(id)
             if callback.future.cancelled():
                 return
-            error = msg.get("error")
-            if error:
+            if error := msg.get("error"):
                 parsed_error = parse_error(error["error"])  # type: ignore
                 parsed_error.stack = "".join(
                     traceback.format_list(callback.stack_trace)[-10:]
@@ -353,10 +351,11 @@ class Connection(EventEmitter):
         if isinstance(payload, Channel):
             return dict(guid=payload._guid)
         if isinstance(payload, dict):
-            result = {}
-            for key, value in payload.items():
-                result[key] = self._replace_channels_with_guids(value)
-            return result
+            return {
+                key: self._replace_channels_with_guids(value)
+                for key, value in payload.items()
+            }
+
         return payload
 
     def _replace_guids_with_channels(self, payload: Any) -> Any:
@@ -367,10 +366,11 @@ class Connection(EventEmitter):
         if isinstance(payload, dict):
             if payload.get("guid") in self._objects:
                 return self._objects[payload["guid"]]._channel
-            result = {}
-            for key, value in payload.items():
-                result[key] = self._replace_guids_with_channels(value)
-            return result
+            return {
+                key: self._replace_guids_with_channels(value)
+                for key, value in payload.items()
+            }
+
         return payload
 
     async def wrap_api_call(
@@ -380,8 +380,7 @@ class Connection(EventEmitter):
             return await cb()
         task = asyncio.current_task(self._loop)
         st: List[inspect.FrameInfo] = getattr(task, "__pw_stack__", inspect.stack())
-        metadata = _extract_metadata_from_stack(st, is_internal)
-        if metadata:
+        if metadata := _extract_metadata_from_stack(st, is_internal):
             self._api_zone.set(metadata)
         try:
             return await cb()
@@ -395,8 +394,7 @@ class Connection(EventEmitter):
             return cb()
         task = asyncio.current_task(self._loop)
         st: List[inspect.FrameInfo] = getattr(task, "__pw_stack__", inspect.stack())
-        metadata = _extract_metadata_from_stack(st, is_internal)
-        if metadata:
+        if metadata := _extract_metadata_from_stack(st, is_internal):
             self._api_zone.set(metadata)
         try:
             return cb()
@@ -448,9 +446,11 @@ def _extract_metadata_from_stack(
             last_internal_api_name = ""
     if not api_name:
         api_name = last_internal_api_name
-    if api_name:
-        return {
+    return (
+        {
             "apiName": api_name,
             "stack": stack,
         }
-    return None
+        if api_name
+        else None
+    )

@@ -123,7 +123,7 @@ def serialize_value(
         if math.isnan(value):
             return dict(v="NaN")
     if isinstance(value, datetime):
-        return dict(d=value.isoformat() + "Z")
+        return dict(d=f"{value.isoformat()}Z")
     if isinstance(value, bool):
         return {"b": value}
     if isinstance(value, (int, float)):
@@ -138,18 +138,19 @@ def serialize_value(
 
     if isinstance(value, list):
         id = visitor_info.visit(value)
-        a = []
-        for e in value:
-            a.append(serialize_value(e, handles, visitor_info))
+        a = [serialize_value(e, handles, visitor_info) for e in value]
         return dict(a=a, id=id)
 
     if isinstance(value, dict):
         id = visitor_info.visit(value)
-        o = []
-        for name in value:
-            o.append(
-                {"k": name, "v": serialize_value(value[name], handles, visitor_info)}
-            )
+        o = [
+            {
+                "k": name,
+                "v": serialize_value(value[name], handles, visitor_info),
+            }
+            for name in value
+        ]
+
         return dict(o=o, id=id)
     return dict(v="undefined")
 
@@ -179,10 +180,7 @@ def parse_value(value: Any, refs: Dict[int, Any] = {}) -> Any:
                 return float("nan")
             if v == "undefined":
                 return None
-            if v == "null":
-                return None
-            return v
-
+            return None if v == "null" else v
         if "u" in value:
             return urlparse(value["u"])
 

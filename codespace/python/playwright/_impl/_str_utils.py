@@ -31,8 +31,6 @@ def escape_with_quotes(text: str, char: str = "'") -> str:
 
 def escape_regex_flags(pattern: Pattern) -> str:
     flags = ""
-    if pattern.flags != 0:
-        flags = ""
     if (pattern.flags & int(re.IGNORECASE)) != 0:
         flags += "i"
     if (pattern.flags & int(re.DOTALL)) != 0:

@@ -229,7 +229,7 @@ class Chat(TelegramObject):
         **_kwargs: Any,
     ):
         # Required
-        self.id = int(id)  # pylint: disable=C0103
+        self.id = id
         self.type = type
         # Optionals
         self.title = title
@@ -247,8 +247,11 @@ class Chat(TelegramObject):
         self.permissions = permissions
         self.slow_mode_delay = slow_mode_delay
         self.message_auto_delete_time = (
-            int(message_auto_delete_time) if message_auto_delete_time is not None else None
+            message_auto_delete_time
+            if message_auto_delete_time is not None
+            else None
         )
+
         self.has_protected_content = has_protected_content
         self.sticker_set_name = sticker_set_name
         self.can_set_sticker_set = can_set_sticker_set
@@ -281,9 +284,7 @@ class Chat(TelegramObject):
         """:obj:`str`: Convenience property. If the chat has a :attr:`username`, returns a t.me
         link of the chat.
         """
-        if self.username:
-            return f"https://t.me/{self.username}"
-        return None
+        return f"https://t.me/{self.username}" if self.username else None
 
     @classmethod
     def de_json(cls, data: Optional[JSONDict], bot: 'Bot') -> Optional['Chat']:

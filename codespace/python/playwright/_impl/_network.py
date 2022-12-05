@@ -123,10 +123,10 @@ class Request(ChannelOwner):
 
     @property
     def post_data(self) -> Optional[str]:
-        data = self._fallback_overrides.get("postData", self.post_data_buffer)
-        if not data:
+        if data := self._fallback_overrides.get("postData", self.post_data_buffer):
+            return data.decode() if isinstance(data, bytes) else data
+        else:
             return None
-        return data.decode() if isinstance(data, bytes) else data
 
     @property
     def post_data_json(self) -> Optional[Any]:
@@ -143,17 +143,14 @@ class Request(ChannelOwner):
 
     @property
     def post_data_buffer(self) -> Optional[bytes]:
-        override = self._fallback_overrides.get("post_data")
-        if override:
+        if override := self._fallback_overrides.get("post_data"):
             return (
                 override.encode()
                 if isinstance(override, str)
                 else cast(bytes, override)
             )
         b64_content = self._initializer.get("postData")
-        if b64_content is None:
-            return None
-        return base64.b64decode(b64_content)
+        return None if b64_content is None else base64.b64decode(b64_content)
 
     async def response(self) -> Optional["Response"]:
         return from_nullable_channel(await self._channel.send("response"))
@@ -183,8 +180,7 @@ class Request(ChannelOwner):
 
     @property
     def headers(self) -> Headers:
-        override = self._fallback_overrides.get("headers")
-        if override:
+        if override := self._fallback_overrides.get("headers"):
             return RawHeaders._from_headers_dict_lossy(override).headers()
         return self._provisional_headers.headers()
 
@@ -198,8 +194,7 @@ class Request(ChannelOwner):
         return (await self._actual_headers()).get(name)
 
     async def _actual_headers(self) -> "RawHeaders":
-        override = self._fallback_overrides.get("headers")
-        if override:
+        if override := self._fallback_overrides.get("headers"):
             return RawHeaders(serialize_headers(override))
         if not self._all_headers_future:
             self._all_headers_future = asyncio.Future()
@@ -603,10 +598,7 @@ class RawHeaders:
         return list(self._headers_map[name.lower()].keys())
 
     def headers(self) -> Dict[str, str]:
-        result = {}
-        for name in self._headers_map.keys():
-            result[name] = cast(str, self.get(name))
-        return result
+        return {name: cast(str, self.get(name)) for name in self._headers_map.keys()}
 
     def headers_array(self) -> HeadersArray:
         return self._headers_array
