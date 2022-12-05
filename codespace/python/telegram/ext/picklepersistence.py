@@ -226,10 +226,12 @@ class PicklePersistence(BasePersistence[UD, CD, BD]):
         elif not self.single_file:
             filename = f"{self.filename}_user_data"
             data = self._load_file(filename)
-            if not data:
-                data = defaultdict(self.context_types.user_data)
-            else:
-                data = defaultdict(self.context_types.user_data, data)
+            data = (
+                defaultdict(self.context_types.user_data, data)
+                if data
+                else defaultdict(self.context_types.user_data)
+            )
+
             self.user_data = data
         else:
             self._load_singlefile()
@@ -246,10 +248,12 @@ class PicklePersistence(BasePersistence[UD, CD, BD]):
         elif not self.single_file:
             filename = f"{self.filename}_chat_data"
             data = self._load_file(filename)
-            if not data:
-                data = defaultdict(self.context_types.chat_data)
-            else:
-                data = defaultdict(self.context_types.chat_data, data)
+            data = (
+                defaultdict(self.context_types.chat_data, data)
+                if data
+                else defaultdict(self.context_types.chat_data)
+            )
+
             self.chat_data = data
         else:
             self._load_singlefile()

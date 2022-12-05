@@ -61,4 +61,4 @@ class ReplyKeyboardRemove(ReplyMarkup):
         # Required
         self.remove_keyboard = True
         # Optionals
-        self.selective = bool(selective)
+        self.selective = selective

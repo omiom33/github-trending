@@ -176,9 +176,7 @@ class DictPersistence(BasePersistence):
     @property
     def user_data_json(self) -> str:
         """:obj:`str`: The user_data serialized as a JSON-string."""
-        if self._user_data_json:
-            return self._user_data_json
-        return json.dumps(self.user_data)
+        return self._user_data_json or json.dumps(self.user_data)
 
     @property
     def chat_data(self) -> Optional[Dict[int, Dict]]:
@@ -188,9 +186,7 @@ class DictPersistence(BasePersistence):
     @property
     def chat_data_json(self) -> str:
         """:obj:`str`: The chat_data serialized as a JSON-string."""
-        if self._chat_data_json:
-            return self._chat_data_json
-        return json.dumps(self.chat_data)
+        return self._chat_data_json or json.dumps(self.chat_data)
 
     @property
     def bot_data(self) -> Optional[Dict]:
@@ -200,9 +196,7 @@ class DictPersistence(BasePersistence):
     @property
     def bot_data_json(self) -> str:
         """:obj:`str`: The bot_data serialized as a JSON-string."""
-        if self._bot_data_json:
-            return self._bot_data_json
-        return json.dumps(self.bot_data)
+        return self._bot_data_json or json.dumps(self.bot_data)
 
     @property
     def callback_data(self) -> Optional[CDCData]:
@@ -219,9 +213,7 @@ class DictPersistence(BasePersistence):
 
         .. versionadded:: 13.6
         """
-        if self._callback_data_json:
-            return self._callback_data_json
-        return json.dumps(self.callback_data)
+        return self._callback_data_json or json.dumps(self.callback_data)
 
     @property
     def conversations(self) -> Optional[Dict[str, ConversationDict]]:
@@ -429,11 +421,11 @@ class DictPersistence(BasePersistence):
         Returns:
             :obj:`str`: The JSON-serialized conversations dict
         """
-        tmp: Dict[str, JSONDict] = {}
-        for handler, states in conversations.items():
-            tmp[handler] = {}
-            for key, state in states.items():
-                tmp[handler][json.dumps(key)] = state
+        tmp: Dict[str, JSONDict] = {
+            handler: {json.dumps(key): state for key, state in states.items()}
+            for handler, states in conversations.items()
+        }
+
         return json.dumps(tmp)
 
     @staticmethod
@@ -448,11 +440,13 @@ class DictPersistence(BasePersistence):
             :obj:`dict`: The conversations dict after decoding
         """
         tmp = json.loads(json_string)
-        conversations: Dict[str, ConversationDict] = {}
-        for handler, states in tmp.items():
-            conversations[handler] = {}
-            for key, state in states.items():
-                conversations[handler][tuple(json.loads(key))] = state
+        conversations: Dict[str, ConversationDict] = {
+            handler: {
+                tuple(json.loads(key)): state for key, state in states.items()
+            }
+            for handler, states in tmp.items()
+        }
+
         return conversations
 
     @staticmethod

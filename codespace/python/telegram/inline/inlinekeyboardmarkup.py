@@ -57,9 +57,10 @@ class InlineKeyboardMarkup(ReplyMarkup):
         """See :meth:`telegram.TelegramObject.to_dict`."""
         data = super().to_dict()
 
-        data['inline_keyboard'] = []
-        for inline_keyboard in self.inline_keyboard:
-            data['inline_keyboard'].append([x.to_dict() for x in inline_keyboard])
+        data['inline_keyboard'] = [
+            [x.to_dict() for x in inline_keyboard]
+            for inline_keyboard in self.inline_keyboard
+        ]
 
         return data
 
@@ -75,8 +76,7 @@ class InlineKeyboardMarkup(ReplyMarkup):
         for row in data['inline_keyboard']:
             tmp = []
             for col in row:
-                btn = InlineKeyboardButton.de_json(col, bot)
-                if btn:
+                if btn := InlineKeyboardButton.de_json(col, bot):
                     tmp.append(btn)
             keyboard.append(tmp)
 
@@ -135,4 +135,4 @@ class InlineKeyboardMarkup(ReplyMarkup):
         return cls(button_grid, **kwargs)
 
     def __hash__(self) -> int:
-        return hash(tuple(tuple(button for button in row) for row in self.inline_keyboard))
+        return hash(tuple(tuple(row) for row in self.inline_keyboard))

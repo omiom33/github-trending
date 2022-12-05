@@ -227,17 +227,11 @@ class AIORateLimiter(BaseRateLimiter[int]):
         max_retries = rate_limit_args or self._max_retries
 
         group: Union[int, str, bool] = False
-        chat: bool = False
         chat_id = data.get("chat_id")
-        if chat_id is not None:
-            chat = True
-
+        chat = chat_id is not None
         # In case user passes integer chat id as string
-        try:
+        with contextlib.suppress(ValueError, TypeError):
             chat_id = int(chat_id)
-        except (ValueError, TypeError):
-            pass
-
         if (isinstance(chat_id, int) and chat_id < 0) or isinstance(chat_id, str):
             # string chat_id only works for channels and supergroups
             # We can't really tell channels from groups though ...

@@ -74,11 +74,12 @@ class APIRequest:
                 )
         if "extraHTTPHeaders" in params:
             params["extraHTTPHeaders"] = serialize_headers(params["extraHTTPHeaders"])
-        context = cast(
+        return cast(
             APIRequestContext,
-            from_channel(await self.playwright._channel.send("newRequest", params)),
+            from_channel(
+                await self.playwright._channel.send("newRequest", params)
+            ),
         )
-        return context
 
 
 class APIRequestContext(ChannelOwner):
@@ -422,9 +423,15 @@ class APIResponse:
 
 
 def is_json_content_type(headers: network.HeadersArray = None) -> bool:
-    if not headers:
-        return False
-    for header in headers:
-        if header["name"] == "Content-Type":
-            return header["value"].startswith("application/json")
-    return False
+    return (
+        next(
+            (
+                header["value"].startswith("application/json")
+                for header in headers
+                if header["name"] == "Content-Type"
+            ),
+            False,
+        )
+        if headers
+        else False
+    )

@@ -129,8 +129,7 @@ class StringRegexHandler(Handler[str, CCT]):
 
         """
         if isinstance(update, str):
-            match = re.match(self.pattern, update)
-            if match:
+            if match := re.match(self.pattern, update):
                 return match
         return None
 

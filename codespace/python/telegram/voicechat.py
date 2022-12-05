@@ -67,7 +67,7 @@ class VoiceChatEnded(TelegramObject):
     __slots__ = ('duration', '_id_attrs')
 
     def __init__(self, duration: int, **_kwargs: Any) -> None:
-        self.duration = int(duration) if duration is not None else None
+        self.duration = duration if duration is not None else None
         self._id_attrs = (self.duration,)
 
 

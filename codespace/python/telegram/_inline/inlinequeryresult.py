@@ -60,7 +60,7 @@ class InlineQueryResult(TelegramObject):
 
         # Required
         self.type = type
-        self.id = str(id)  # pylint: disable=invalid-name
+        self.id = id
 
         self._id_attrs = (self.id,)
 

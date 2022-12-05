@@ -197,9 +197,7 @@ class DictPersistence(BasePersistence):
     @property
     def user_data_json(self) -> str:
         """:obj:`str`: The user_data serialized as a JSON-string."""
-        if self._user_data_json:
-            return self._user_data_json
-        return json.dumps(self.user_data)
+        return self._user_data_json or json.dumps(self.user_data)
 
     @property
     def chat_data(self) -> Optional[DefaultDict[int, Dict]]:
@@ -209,9 +207,7 @@ class DictPersistence(BasePersistence):
     @property
     def chat_data_json(self) -> str:
         """:obj:`str`: The chat_data serialized as a JSON-string."""
-        if self._chat_data_json:
-            return self._chat_data_json
-        return json.dumps(self.chat_data)
+        return self._chat_data_json or json.dumps(self.chat_data)
 
     @property
     def bot_data(self) -> Optional[Dict]:
@@ -221,9 +217,7 @@ class DictPersistence(BasePersistence):
     @property
     def bot_data_json(self) -> str:
         """:obj:`str`: The bot_data serialized as a JSON-string."""
-        if self._bot_data_json:
-            return self._bot_data_json
-        return json.dumps(self.bot_data)
+        return self._bot_data_json or json.dumps(self.bot_data)
 
     @property
     def callback_data(self) -> Optional[CDCData]:
@@ -239,9 +233,7 @@ class DictPersistence(BasePersistence):
 
         .. versionadded:: 13.6
         """
-        if self._callback_data_json:
-            return self._callback_data_json
-        return json.dumps(self.callback_data)
+        return self._callback_data_json or json.dumps(self.callback_data)
 
     @property
     def conversations(self) -> Optional[Dict[str, ConversationDict]]:
@@ -251,9 +243,9 @@ class DictPersistence(BasePersistence):
     @property
     def conversations_json(self) -> str:
         """:obj:`str`: The conversations serialized as a JSON-string."""
-        if self._conversations_json:
-            return self._conversations_json
-        return encode_conversations_to_json(self.conversations)  # type: ignore[arg-type]
+        return self._conversations_json or encode_conversations_to_json(
+            self.conversations
+        )
 
     def get_user_data(self) -> DefaultDict[int, Dict[object, object]]:
         """Returns the user_data created from the ``user_data_json`` or an empty

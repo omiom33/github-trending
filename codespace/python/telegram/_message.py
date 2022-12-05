@@ -619,12 +619,12 @@ class Message(TelegramObject):
         self.left_chat_member = left_chat_member
         self.new_chat_title = new_chat_title
         self.new_chat_photo = new_chat_photo or []
-        self.delete_chat_photo = bool(delete_chat_photo)
-        self.group_chat_created = bool(group_chat_created)
-        self.supergroup_chat_created = bool(supergroup_chat_created)
+        self.delete_chat_photo = delete_chat_photo
+        self.group_chat_created = group_chat_created
+        self.supergroup_chat_created = supergroup_chat_created
         self.migrate_to_chat_id = migrate_to_chat_id
         self.migrate_from_chat_id = migrate_from_chat_id
-        self.channel_chat_created = bool(channel_chat_created)
+        self.channel_chat_created = channel_chat_created
         self.message_auto_delete_timer_changed = message_auto_delete_timer_changed
         self.pinned_message = pinned_message
         self.forward_from_message_id = forward_from_message_id
@@ -677,11 +677,7 @@ class Message(TelegramObject):
         a private chat or normal group, returns a t.me link of the message.
         """
         if self.chat.type not in [Chat.PRIVATE, Chat.GROUP]:
-            if self.chat.username:
-                to_link = self.chat.username
-            else:
-                # Get rid of leading -100 for supergroups
-                to_link = f"c/{str(self.chat.id)[4:]}"
+            to_link = self.chat.username or f"c/{str(self.chat.id)[4:]}"
             return f"https://t.me/{to_link}/{self.message_id}"
         return None
 
@@ -806,12 +802,14 @@ class Message(TelegramObject):
         if not isinstance(self._effective_attachment, DefaultValue):
             return self._effective_attachment
 
-        for attachment_type in MessageAttachmentType:
-            if self[attachment_type]:
-                self._effective_attachment = self[attachment_type]  # type: ignore[assignment]
-                break
-        else:
-            self._effective_attachment = None
+        self._effective_attachment = next(
+            (
+                self[attachment_type]
+                for attachment_type in MessageAttachmentType
+                if self[attachment_type]
+            ),
+            None,
+        )
 
         return self._effective_attachment  # type: ignore[return-value]
 
@@ -820,19 +818,20 @@ class Message(TelegramObject):
         if reply_to_message_id is not None:
             return reply_to_message_id
 
-        if quote is not None:
-            if quote:
-                return self.message_id
-
-        else:
+        if quote is None:
             # Unfortunately we need some ExtBot logic here because it's hard to move shortcut
             # logic into ExtBot
-            if hasattr(self.get_bot(), "defaults") and self.get_bot().defaults:  # type: ignore
-                default_quote = self.get_bot().defaults.quote  # type: ignore[attr-defined]
-            else:
-                default_quote = None
+            default_quote = (
+                self.get_bot().defaults.quote
+                if hasattr(self.get_bot(), "defaults") and self.get_bot().defaults
+                else None
+            )
+
             if (default_quote is None and self.chat.type != Chat.PRIVATE) or default_quote:
                 return self.message_id
+
+        elif quote:
+            return self.message_id
 
         return None
 

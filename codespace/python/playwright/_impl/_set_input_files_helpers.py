@@ -34,24 +34,22 @@ async def convert_input_files(
     file_list = files if isinstance(files, list) else [files]
 
     has_large_buffer = any(
-        [
-            len(f.get("buffer", "")) > SIZE_LIMIT_IN_BYTES
-            for f in file_list
-            if not isinstance(f, (str, Path))
-        ]
+        len(f.get("buffer", "")) > SIZE_LIMIT_IN_BYTES
+        for f in file_list
+        if not isinstance(f, (str, Path))
     )
+
     if has_large_buffer:
         raise Error(
             "Cannot set buffer larger than 50Mb, please write it to a file and pass its path instead."
         )
 
     has_large_file = any(
-        [
-            os.stat(f).st_size > SIZE_LIMIT_IN_BYTES
-            for f in file_list
-            if isinstance(f, (str, Path))
-        ]
+        os.stat(f).st_size > SIZE_LIMIT_IN_BYTES
+        for f in file_list
+        if isinstance(f, (str, Path))
     )
+
     if has_large_file:
         if context._channel._connection.is_remote:
             streams = []

@@ -131,8 +131,11 @@ class ChatInviteLink(TelegramObject):
         self.member_limit = member_limit
         self.name = name
         self.pending_join_request_count = (
-            int(pending_join_request_count) if pending_join_request_count is not None else None
+            pending_join_request_count
+            if pending_join_request_count is not None
+            else None
         )
+
         self._id_attrs = (
             self.invite_link,
             self.creates_join_request,

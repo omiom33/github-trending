@@ -55,10 +55,10 @@ def escape_markdown(text: str, version: int = 1, entity_type: str = None) -> str
             See the official API documentation for details. Only valid in combination with
             ``version=2``, will be ignored else.
     """
-    if int(version) == 1:
+    if version == 1:
         escape_chars = r"_*`["
-    elif int(version) == 2:
-        if entity_type in ["pre", "code"]:
+    elif version == 2:
+        if entity_type in {"pre", "code"}:
             escape_chars = r"\`"
         elif entity_type == "text_link":
             escape_chars = r"\)"
@@ -129,11 +129,14 @@ def effective_message_type(entity: Union["Message", "Update"]) -> Optional[str]:
     else:
         raise TypeError(f"The entity is neither Message nor Update (got: {type(entity)})")
 
-    for message_type in MessageType:
-        if message[message_type]:
-            return message_type
-
-    return None
+    return next(
+        (
+            message_type
+            for message_type in MessageType
+            if message[message_type]
+        ),
+        None,
+    )
 
 
 def create_deep_linked_url(bot_username: str, payload: str = None, group: bool = False) -> str:
@@ -179,9 +182,5 @@ def create_deep_linked_url(bot_username: str, payload: str = None, group: bool =
             "URLs: A-Z, a-z, 0-9, _ and -"
         )
 
-    if group:
-        key = "startgroup"
-    else:
-        key = "start"
-
+    key = "startgroup" if group else "start"
     return f"{base_url}?{key}={payload}"

@@ -39,10 +39,7 @@ def _get_stderr_fileno() -> Optional[int]:
         # when Pyinstaller is used, there is no closed attribute because Pyinstaller monkey-patches it with a NullWriter class
         if sys.stderr is None or not hasattr(sys.stderr, "closed"):
             return None
-        if sys.stderr.closed:
-            return None
-
-        return sys.stderr.fileno()
+        return None if sys.stderr.closed else sys.stderr.fileno()
     except (AttributeError, io.UnsupportedOperation):
         # pytest-xdist monkeypatches sys.stderr with an object that is not an actual file.
         # https://docs.python.org/3/library/faulthandler.html#issue-with-file-descriptors
@@ -156,10 +153,7 @@ class PipeTransport(Transport):
                     if self._stopped:
                         break
                     length -= to_read
-                    if len(buffer):
-                        buffer = buffer + data
-                    else:
-                        buffer = data
+                    buffer = buffer + data if len(buffer) else data
                 if self._stopped:
                     break
 

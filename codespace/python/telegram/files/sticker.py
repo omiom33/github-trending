@@ -117,10 +117,10 @@ class Sticker(TelegramObject):
         **_kwargs: Any,
     ):
         # Required
-        self.file_id = str(file_id)
-        self.file_unique_id = str(file_unique_id)
-        self.width = int(width)
-        self.height = int(height)
+        self.file_id = file_id
+        self.file_unique_id = file_unique_id
+        self.width = width
+        self.height = height
         self.is_animated = is_animated
         self.is_video = is_video
         # Optionals
@@ -310,7 +310,4 @@ class MaskPosition(TelegramObject):
         """See :meth:`telegram.TelegramObject.de_json`."""
         data = cls._parse_data(data)
 
-        if data is None:
-            return None
-
-        return cls(**data)
+        return None if data is None else cls(**data)

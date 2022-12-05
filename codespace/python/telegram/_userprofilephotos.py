@@ -70,4 +70,4 @@ class UserProfilePhotos(TelegramObject):
         return super().de_json(data=data, bot=bot)
 
     def __hash__(self) -> int:
-        return hash(tuple(tuple(p for p in photo) for photo in self.photos))
+        return hash(tuple(tuple(photo) for photo in self.photos))

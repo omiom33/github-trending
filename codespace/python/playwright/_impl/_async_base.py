@@ -62,9 +62,7 @@ class AsyncBase(ImplWrapper):
         return self._impl_obj.__str__()
 
     def _wrap_handler(self, handler: Any) -> Callable[..., None]:
-        if callable(handler):
-            return mapping.wrap_handler(handler)
-        return handler
+        return mapping.wrap_handler(handler) if callable(handler) else handler
 
     def on(self, event: Any, f: Any) -> None:
         """Registers the function ``f`` to the event name ``event``."""

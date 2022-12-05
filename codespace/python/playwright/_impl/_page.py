@@ -211,15 +211,16 @@ class Page(ChannelOwner):
         self._closed_or_crashed_future: asyncio.Future = asyncio.Future()
         self.on(
             Page.Events.Close,
-            lambda _: self._closed_or_crashed_future.set_result(True)
-            if not self._closed_or_crashed_future.done()
-            else None,
+            lambda _: None
+            if self._closed_or_crashed_future.done()
+            else self._closed_or_crashed_future.set_result(True),
         )
+
         self.on(
             Page.Events.Crash,
-            lambda _: self._closed_or_crashed_future.set_result(True)
-            if not self._closed_or_crashed_future.done()
-            else None,
+            lambda _: None
+            if self._closed_or_crashed_future.done()
+            else self._closed_or_crashed_future.set_result(True),
         )
 
     def __repr__(self) -> str:
@@ -252,8 +253,7 @@ class Page(ChannelOwner):
         await self._browser_context._on_route(route, request)
 
     def _on_binding(self, binding_call: "BindingCall") -> None:
-        func = self._bindings.get(binding_call._initializer["name"])
-        if func:
+        if func := self._bindings.get(binding_call._initializer["name"]):
             asyncio.create_task(binding_call.call(func))
         self._browser_context._on_binding(binding_call)
 
@@ -277,11 +277,10 @@ class Page(ChannelOwner):
         dialog = cast(Dialog, from_channel(params["dialog"]))
         if self.listeners(Page.Events.Dialog):
             self.emit(Page.Events.Dialog, dialog)
+        elif dialog.type == "beforeunload":
+            asyncio.create_task(dialog.accept())
         else:
-            if dialog.type == "beforeunload":
-                asyncio.create_task(dialog.accept())
-            else:
-                asyncio.create_task(dialog.dismiss())
+            asyncio.create_task(dialog.dismiss())
 
     def _on_download(self, params: Any) -> None:
         url = params["url"]
@@ -314,9 +313,7 @@ class Page(ChannelOwner):
         return self._browser_context
 
     async def opener(self) -> Optional["Page"]:
-        if self._opener and self._opener.is_closed():
-            return None
-        return self._opener
+        return None if self._opener and self._opener.is_closed() else self._opener
 
     @property
     def main_frame(self) -> Frame:
@@ -581,10 +578,11 @@ class Page(ChannelOwner):
             RouteHandler(
                 URLMatcher(self._browser_context._options.get("baseURL"), url),
                 handler,
-                True if self._dispatcher_fiber else False,
+                bool(self._dispatcher_fiber),
                 times,
             ),
         )
+
         if len(self._routes) == 1:
             await self._channel.send(
                 "setNetworkInterceptionEnabled", dict(enabled=True)
@@ -599,7 +597,7 @@ class Page(ChannelOwner):
                 self._routes,
             )
         )
-        if len(self._routes) == 0:
+        if not self._routes:
             await self._disable_interception()
 
     async def route_from_har(
@@ -1010,9 +1008,7 @@ class Page(ChannelOwner):
         def my_predicate(request: Request) -> bool:
             if matcher:
                 return matcher.matches(request.url)
-            if predicate:
-                return predicate(request)
-            return True
+            return predicate(request) if predicate else True
 
         trimmed_url = trim_url(url_or_predicate)
         log_line = f"waiting for request {trimmed_url}" if trimmed_url else None
@@ -1049,9 +1045,7 @@ class Page(ChannelOwner):
         def my_predicate(response: Response) -> bool:
             if matcher:
                 return matcher.matches(response.url)
-            if predicate:
-                return predicate(response)
-            return True
+            return predicate(response) if predicate else True
 
         trimmed_url = trim_url(url_or_predicate)
         log_line = f"waiting for response {trimmed_url}" if trimmed_url else None
@@ -1189,12 +1183,8 @@ class BindingCall(ChannelOwner):
 def trim_url(param: URLMatchRequest) -> Optional[str]:
     if isinstance(param, re.Pattern):
         return trim_end(param.pattern)
-    if isinstance(param, str):
-        return trim_end(param)
-    return None
+    return trim_end(param) if isinstance(param, str) else None
 
 
 def trim_end(s: str) -> str:
-    if len(s) > 50:
-        return s[:50] + "\u2026"
-    return s
+    return s[:50] + "\u2026" if len(s) > 50 else s

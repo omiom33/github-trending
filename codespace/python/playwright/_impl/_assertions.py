@@ -422,9 +422,7 @@ class LocatorAssertions(AssertionsBase):
     ) -> None:
         __tracebackhide__ = True
         await self._expect_impl(
-            "to.be.checked"
-            if checked is None or checked is True
-            else "to.be.unchecked",
+            "to.be.checked" if checked is None or checked else "to.be.unchecked",
             FrameExpectOptions(timeout=timeout),
             None,
             "Locator expected to be checked",
@@ -592,8 +590,7 @@ class APIResponseAssertions:
         if self._is_not:
             message = message.replace("expected to", "expected not to")
         log_list = await self._actual._fetch_log()
-        log = "\n".join(log_list).strip()
-        if log:
+        if log := "\n".join(log_list).strip():
             message += f"\n Call log:\n{log}"
 
         content_type = self._actual.headers.get("content-type")

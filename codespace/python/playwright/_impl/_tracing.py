@@ -50,15 +50,11 @@ class Tracing(ChannelOwner):
         await self._channel.send("tracingStop")
 
     async def _do_stop_chunk(self, file_path: Union[pathlib.Path, str] = None) -> None:
-        is_local = not self._connection.is_remote
-
         mode = "doNotSave"
         if file_path:
-            if is_local:
-                mode = "compressTraceAndSources"
-            else:
-                mode = "compressTrace"
+            is_local = not self._connection.is_remote
 
+            mode = "compressTraceAndSources" if is_local else "compressTrace"
         result = await self._channel.send_return_as_dict(
             "tracingStopChunk",
             {

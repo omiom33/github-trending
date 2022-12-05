@@ -33,10 +33,10 @@ class WritableStream(ChannelOwner):
     async def copy(self, path: Union[str, Path]) -> None:
         with open(path, "rb") as f:
             while True:
-                data = f.read(COPY_BUFSIZE)
-                if not data:
+                if data := f.read(COPY_BUFSIZE):
+                    await self._channel.send(
+                        "write", {"binary": base64.b64encode(data).decode()}
+                    )
+                else:
                     break
-                await self._channel.send(
-                    "write", {"binary": base64.b64encode(data).decode()}
-                )
         await self._channel.send("close")

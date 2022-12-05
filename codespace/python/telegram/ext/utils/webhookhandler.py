@@ -141,8 +141,7 @@ class WebhookHandler(tornado.web.RequestHandler):
         data = json.loads(json_string)
         self.set_status(200)
         self.logger.debug('Webhook received data: %s', json_string)
-        update = Update.de_json(data, self.bot)
-        if update:
+        if update := Update.de_json(data, self.bot):
             self.logger.debug('Received Update with ID %d on Webhook', update.update_id)
             # handle arbitrary callback data, if necessary
             if isinstance(self.bot, ExtBot):

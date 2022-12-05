@@ -87,9 +87,7 @@ class Location(TelegramObject):
         self.horizontal_accuracy = horizontal_accuracy
         self.live_period = live_period
         self.heading = heading
-        self.proximity_alert_radius = (
-            int(proximity_alert_radius) if proximity_alert_radius else None
-        )
+        self.proximity_alert_radius = proximity_alert_radius or None
 
         self._id_attrs = (self.longitude, self.latitude)
 

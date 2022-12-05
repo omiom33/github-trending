@@ -33,9 +33,8 @@ def check_keyboard_type(keyboard: object) -> bool:
     """Checks if the keyboard provided is of the correct type - A list of lists.
     Implicitly tested in the init-tests of `{Inline, Reply}KeyboardMarkup`
     """
-    if not isinstance(keyboard, list):
-        return False
-    for row in keyboard:
-        if not isinstance(row, list):
-            return False
-    return True
+    return (
+        all(isinstance(row, list) for row in keyboard)
+        if isinstance(keyboard, list)
+        else False
+    )

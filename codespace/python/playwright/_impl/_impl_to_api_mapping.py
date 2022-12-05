@@ -58,15 +58,13 @@ class ImplToApiMapping:
             for item in obj:
                 a.append(self.from_maybe_impl(item, visited))
             return a
-        api_class = self._mapping.get(type(obj))
-        if api_class:
-            api_instance = getattr(obj, API_ATTR, None)
-            if not api_instance:
-                api_instance = api_class(obj)
-                setattr(obj, API_ATTR, api_instance)
-            return api_instance
-        else:
+        if not (api_class := self._mapping.get(type(obj))):
             return obj
+        api_instance = getattr(obj, API_ATTR, None)
+        if not api_instance:
+            api_instance = api_class(obj)
+            setattr(obj, API_ATTR, api_instance)
+        return api_instance
 
     def from_impl(self, obj: Any) -> Any:
         assert obj
@@ -103,9 +101,7 @@ class ImplToApiMapping:
                 for item in obj:
                     a.append(self.to_impl(item, visited))
                 return a
-            if isinstance(obj, ImplWrapper):
-                return obj._impl_obj
-            return obj
+            return obj._impl_obj if isinstance(obj, ImplWrapper) else obj
         except RecursionError:
             raise Error("Maximum argument depth exceeded")
 

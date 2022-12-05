@@ -153,9 +153,7 @@ class CallbackContext(Generic[UD, CD, BD]):
             <https://github.com/python-telegram-bot/python-telegram-bot/wiki/
             Storing-bot,-user-and-chat-related-data#chat-migration>`_.
         """
-        if self._chat_id_and_data:
-            return self._chat_id_and_data[1]
-        return None
+        return self._chat_id_and_data[1] if self._chat_id_and_data else None
 
     @chat_data.setter
     def chat_data(self, value: object) -> NoReturn:
@@ -168,9 +166,7 @@ class CallbackContext(Generic[UD, CD, BD]):
         """:obj:`dict`: Optional. A dict that can be used to keep any data in. For each
         update from the same user it will be the same ``dict``.
         """
-        if self._user_id_and_data:
-            return self._user_id_and_data[1]
-        return None
+        return self._user_id_and_data[1] if self._user_id_and_data else None
 
     @user_data.setter
     def user_data(self, value: object) -> NoReturn:
@@ -279,15 +275,12 @@ class CallbackContext(Generic[UD, CD, BD]):
         self = cls(dispatcher)
 
         if update is not None and isinstance(update, Update):
-            chat = update.effective_chat
-            user = update.effective_user
-
-            if chat:
+            if chat := update.effective_chat:
                 self._chat_id_and_data = (
                     chat.id,
                     dispatcher.chat_data[chat.id],  # pylint: disable=W0212
                 )
-            if user:
+            if user := update.effective_user:
                 self._user_id_and_data = (
                     user.id,
                     dispatcher.user_data[user.id],  # pylint: disable=W0212

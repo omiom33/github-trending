@@ -70,9 +70,9 @@ class ForceReply(ReplyMarkup):
         **_kwargs: Any,
     ):
         # Required
-        self.force_reply = bool(force_reply)
+        self.force_reply = force_reply
         # Optionals
-        self.selective = bool(selective)
+        self.selective = selective
         self.input_field_placeholder = input_field_placeholder
 
         self._id_attrs = (self.selective,)

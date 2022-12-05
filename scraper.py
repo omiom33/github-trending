@@ -20,7 +20,7 @@ def git_add_commit_push(date, filename):
 
 def createMarkdown(date, filename):
     with open(filename, 'w') as f:
-        f.write("## " + date + "\n")
+        f.write(f"## {date}" + "\n")
 
 
 def scrape(language, filename):
@@ -53,7 +53,7 @@ def scrape(language, filename):
             owner = i(".lh-condensed span.text-normal").text()
             description = i("p.col-9").text()
             url = i(".lh-condensed a").attr("href")
-            url = "https://github.com" + url
+            url = f"https://github.com{url}"
             # ownerImg = i("p.repo-list-meta a img").attr("src")
             # print(ownerImg)
             f.write(u"* [{title}]({url}):{description}\n".format(title=title, url=url, description=description))
